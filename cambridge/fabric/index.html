@@ -7,13 +7,16 @@
 
     <meta name="description" content="Fabric - structural subtyping in the modern age.">
     <link rel="stylesheet" href="https://latex.vercel.app/style.css">
+    <link rel="stylesheet" href="https://latex.vercel.app/prism/prism.css">
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="prism.js"></script>
 </head>
 
 <body id="top" class="text-justify">
     <header>
         <h1><span class="latex">Fabric</span></h1>
         <p class="author">
-            Jakub Bachurski <br> <i>Supervisors: Dominic Orchard and Alan Mycroft</i> <br> University of Cambridge
+            Jakub Bachurski <br /> <i>Supervisors: Dominic Orchard and Alan Mycroft</i> <br /> University of Cambridge
         </p>
     </header>
 
@@ -21,25 +24,151 @@
     <p>
         Subtyping is a classical programming language feature, usually associated with <i>nominal</i> subtyping in
         object-oriented programming. <b>Structural subtyping</b> — where the subtyping relation is derived from the
-        shared structure of types — is an alternative. Various structural typing approaches have seen interest, but
-        these are often incomplete without subtyping, which ends up omitted because of its inherent complexity. <br>
+        shared structure of types — is an alternative. Structural typing is present in many forms in modern languages,
+        but it is often incomplete without subtyping. Regardless, subtyping often ends up omitted because of its
+        inherent complexity. <br />
 
         I argue that with the introduction of <b>algebraic subtyping</b> — a new framework for ML-style type
         inference — the time has come to revisit structural subtyping. In my thesis I propose a novel language
         design, <b>Fabric</b>, and demonstrate the relevance of structural subtyping to modern design problems. I
         propose a new approach to typing array programs, show how to capture record extension within algebraic
         subtyping without row polymorphism, and compile Fabric into WebAssembly with a focus on efficient core data
-        structures. Through my work I aim to show structural subtyping could narrow the expressive gap between static
-        and dynamic languages, and its ideas can improve how we use both.
+        structures. I aim to show structural subtyping could narrow the expressive gap between static and dynamic
+        languages, and its ideas can improve how we use both.
     </p>
     </div>
 
     <main>
         <article>
+            <p><i><b>Note!</b> Fabric is a work-in-progress project under active development.</i></p>
             <h2 id="documents">Documents</h2>
             <ul>
                 <li><a href="pre-abstract.pdf">Abstract</a> with extended background and motivation.</li>
             </ul>
+
+            <h2 id="overview">Overview</h2>
+
+            <h3>Type system</h3>
+
+            <p>
+                Fabric's type system follows the framework of <b>algebraic subtyping</b>, as set out by Stephen Dolan in
+                his thesis (<a href="https://dl.acm.org/doi/10.1145/3009837.3009882">MLsub</a>) and later refined by
+                Lionel Parreaux (<a href="https://dl.acm.org/doi/10.1145/3409006">Simple-sub</a>, <a
+                    href="https://dl.acm.org/doi/10.1145/3563304">MLstruct</a>). When following this tradition, we
+                define a lattice algebra over types, with meets and joins over any pair of types. For instance, in
+                MLsub:
+
+                $$ \texttt{select}\,p\,v\,d = \texttt{if}\, p\,v \,\texttt{then}\, v \,\texttt{else}\, d $$
+                $$ \forall \alpha, \beta \ldotp (\alpha \to \texttt{bool}) \to \alpha \to \beta \to (\alpha \sqcup
+                \beta) $$
+
+                In Fabric I implement the type system following MLstruct, which removes the <i>polarity restriction</i>
+                and supports a limited form of negation types. I explore the capabilities and limitations of this
+                Boolean algebraic approach to algebraic subtyping. Subtyping, as in similar work, is implicit in Fabric.
+            </p>
+
+            <h4>Records</h4>
+
+            <p>
+                A key feature present in both statically and dynamically typed languages are aggregate <i>record
+                    types</i>. Dynamic languages (Python, JavaScript, Lua) often call these <i>objects</i>, and check
+                attribute accesses at runtime. I believe we can get much of the benefits of objects without sacrificing
+                safety by typing them structurally. In the past, successful approaches to this have relied on the
+                application of row polymorphism
+                – an extension to Hindley-Milner type systems (e.g. <a href="https://ocaml.org/docs/objects">OCaml's
+                    object types</a>, or <a
+                    href="https://github.com/purescript/documentation/blob/master/language/Records.md">PureScript's
+                    records</a>).
+                <!--
+                In fact, OCaml's <i>object types</i> can be seen as structural records (and they
+                complement <i>polymorphic variants</i>, i.e. structural variant types). The two rely on a limited form
+                of row polymorphism, and subtyping is explicit.
+                -->
+                <br />
+
+            <pre><code class="language-ocaml">
+(* type annotations are added for clarity *)
+let p: {x: int, y: int} = {x: 3, y: 4}
+let cp: {x: int, y: int, c: [ Green ]} = {c: Green | p}
+let hypot v = v.x*v.x + v.y*v.y
+let h = hypot cp (* 25 *)
+            </code></pre>
+
+            I propose to use algebraic subtyping as a basis for typing records instead, without the inclusion of row
+            polymorphism. To make this possible, I propose a solution to the update problem of subtyping (see <a
+                href="https://theory.stanford.edu/people/jcm/papers/cardelli-mitch-op-91.pdf">Cardelli and
+                Mitchell</a>).
+            </p>
+
+            <h4>Arrays</h4>
+
+            It is known that structural types (be it via row polymorphism or otherwise) can be useful for typing
+            operations on dataframes. However, this approach remains unexplored for arrays, with the array programming
+            community failing to discover a satisfactory approach to typing array programs in modern workloads (e.g. for
+            machine learning models and scientific computing).
+
+            Most widely adopted languages only give a cursory treatment of array types, only providing (some of) the
+            following:
+            <ul>
+                <li>A single-dimensional array (vector) type</li>
+                <li>A multi-dimensional array of arbitrary dimension</li>
+                <li>A family of nominal <i>k</i>-dimensional array types</li>
+            </ul>
+            This lack of structure fails to reflect the rich array transformations we need to perform.
+            I argue to resolve this via the use of structural types, with the following core ideas:
+            <ul>
+                <li>Multiple dimensions are modelled as (Cartesian) <b>products</b>.</li>
+                <li>Concatenations are modelled as (ordered) <b>sums</b>.</li>
+            </ul>
+            For example, consider a matrix of floats. We may write its type as \([\mathrm{row}, \mathrm{col}]
+            \Rightarrow \texttt{float}\), where \( \mathrm{row} \) and \( \mathrm{col} \) are index types (we could set
+            them to \( \texttt{int} \), or to be variables). Let us add <i>padding</i> rows to this matrix, one at the
+            left and right. This changes its structure significantly enough to mandate reflecting this in its type:
+            $$ [(\mathrm{Left}: \langle \rangle \mid \mathrm{Center}: \mathrm{row} \mid \mathrm{Right}: \langle
+            \rangle), \mathrm{col}] \Rightarrow \texttt{float} $$
+
+            <h3>Code generation</h3>
+
+            <p>
+                I implemented a Fabric compiler into <a href="https://webassembly.org">WebAssembly</a>, a modern and
+                portable compilation target.<br />
+
+                WebAssembly is a convenient target. WebAssembly runtimes are shipped in most web browsers, but local
+                runtimes and ahead-of-time compilers also exist. It aims to provide a solid abstraction over hardware. I
+                thus expect its performance to be a good baseline above other possible targets. <br />
+
+                I rely on the <a href="https://github.com/WebAssembly/binaryen">Binaryen</a>
+                toolchain for generating WebAssembly code. Fabric is a managed memory language, and so I made rich use
+                of
+                the recently adopted <a href="https://github.com/WebAssembly/gc">WasmGC</a> extensions.
+
+                The main motive that leads me to look at code generation is that structural subtyping requires careful
+                compilation schemes for its core data structures (records, variants). I thus aim to answer the following
+                questions:
+            <ul>
+                <li>Can we quantify the performance impacts of language features using structural subtyping?</li>
+                <li>How does the performance of different record representations compare?</li>
+            </ul>
+            </p>
+
+            <h3>Properties</h3>
+
+            Many type systems limit the user's capabilities to define their own rules in the type system. Powerful type
+            system features like <a href="https://ocaml.org/manual/5.2/gadts-tutorial.html">GADTs</a> permit encoding
+            this, but the <i>proof burden</i> is often left to the user. <br />
+
+            I would like to explore a structural system of <i>properties</i>, describing extra information about a value
+            and supplementing its type. Properties can be required by a function, and they can be derived from other
+            known properties via user-defined inference rules.
+
+            <pre><code class="language-ocaml">
+(* say, BLAS routine for symmetric matrix multiply *)
+val symm : matrix @ {symm} -> matrix -> matrix -> matrix
+
+(* encode rules on higher-level properties of matrices *)
+rule {upper_triangular, lower_triangular} |- {diagonal}.
+rule {orthogonal} |- {invertible}.
+            </code></pre>
         </article>
     </main>
 </body>
