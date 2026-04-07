@@ -1,0 +1,33 @@
+baseURL: "https://jbachurski.github.io/"
+locale: "en-us"
+title: "Jakub Bachurski"
+theme: "xmin"
+
+menu:
+  main:
+    - name: Home
+      url: ""
+      weight: 1
+    - name: Timeline
+      url: "timeline/"
+      weight: 2
+
+params:
+  footer: "&copy; [Jakub Bachurski](jbachurski.github.io) | [Github](https://github.com/jbachurski)"
+
+markup:
+  highlight:
+    codeFences: false
+  goldmark:
+    renderer:
+      unsafe: true
+    extensions:
+      passthrough:
+        enable: true
+        delimiters:
+          block:
+          - - $$
+            - $$
+          inline:
+          - - $
+            - $

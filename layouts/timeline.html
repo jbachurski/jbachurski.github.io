@@ -1,0 +1,30 @@
+{{ partial "header.html" . }}
+
+{{if not .IsHome }}
+<h1>{{ .Title | markdownify }}</h1>
+{{ end }}
+
+{{ .Content }}
+
+<ul>
+    {{ $pages := .Pages }}
+    {{ if .IsHome }}{{ $pages = .Site.RegularPages }}{{ end }}
+    {{ range (where $pages "Section" "!=" "") }}
+    <li>
+        <!-- date -->
+        {{ if .Param "completionDate" }}
+        <span class="date">{{ .Date.Format "2006/01" }} – {{ dateFormat "2006/01" .Params.completionDate }}</span>
+        {{ else }}
+        <span class="date">{{ .Date.Format "2006/01" }}</span>
+        {{ end }}
+        <!-- title -->
+        {{ if eq (.FuzzyWordCount) (0) }}
+        <a href="{{ .RelPermalink }}">{{ .Title | markdownify }}</a>
+        {{ else }}
+        <u>{{ .Title | markdownify }}</u>
+        {{ end }}
+    </li>
+    {{ end }}
+</ul>
+
+{{ partial "footer.html" . }}

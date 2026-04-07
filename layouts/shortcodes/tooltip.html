@@ -1,0 +1,6 @@
+<span class="tooltip-container" tabindex="0">
+    <span class="tooltip-trigger">{{ .Inner | safeHTML }}</span>
+    <span class="tooltip-content">
+        {{ .Get "text" | safeHTML }}
+    </span>
+</span>
