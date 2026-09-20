@@ -1,0 +1,40 @@
+* {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+    font-family: 'EB Garamond', serif;
+}
+
+body {
+    padding-left: 15%;
+    padding-right: 15%;
+}
+
+.title {
+    margin-top: 50pt;
+    font-size: 20pt;
+}
+
+ul,
+ol {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.news-description {
+    margin-left: 10pt;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+h2 {
+    margin-bottom: 0pt;
+}
+
+h3 {
+    display: inline-block;
+    margin-top: 10pt;
+    margin-bottom: 0pt;
+}
